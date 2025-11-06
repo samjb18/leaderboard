@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codewars Leaderboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .last-updated {
+            margin-top: 10px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .leaderboard {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px 20px;
+            color: #d32f2f;
+            background: #ffebee;
+            margin: 20px;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th {
+            padding: 20px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        th.center {
+            text-align: center;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #e0e0e0;
+            transition: background-color 0.3s ease;
+        }
+
+        tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        td {
+            padding: 20px;
+            color: #333;
+        }
+
+        td.center {
+            text-align: center;
+        }
+
+        .rank-cell {
+            font-weight: bold;
+            font-size: 1.3em;
+            color: #667eea;
+            width: 80px;
+        }
+
+        .position-1 .rank-cell {
+            color: #FFD700;
+        }
+
+        .position-2 .rank-cell {
+            color: #C0C0C0;
+        }
+
+        .position-3 .rank-cell {
+            color: #CD7F32;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        .user-link {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .user-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .rank-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .honor-points {
+            font-weight: 700;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+
+        .stat-number {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .languages {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .language-tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .clan-badge {
+            background: #fff3e0;
+            color: #f57c00;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .refresh-btn {
+            display: block;
+            margin: 30px auto;
+            padding: 12px 30px;
+            background: white;
+            color: #667eea;
+            border: 2px solid white;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .refresh-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            padding: 20px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            th, td {
+                padding: 12px 8px;
+                font-size: 0.9em;
+            }
+
+            .languages {
+                flex-direction: column;
+            }
+
+            .hide-mobile {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏆 Codewars Leaderboard</h1>
+            <p class="subtitle">Track your coding progress and compete with teammates</p>
+            <p class="last-updated" id="lastUpdated"></p>
+        </header>
+
+        <div class="leaderboard">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Loading leaderboard data...</p>
+            </div>
+            <div id="error" class="error" style="display: none;"></div>
+            <table id="leaderboardTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th class="center">#</th>
+                        <th>User</th>
+                        <th class="center">Rank</th>
+                        <th class="center">Honor</th>
+                        <th class="center hide-mobile">Completed</th>
+                        <th class="hide-mobile">Top Languages</th>
+                        <th class="hide-mobile">Clan</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                </tbody>
+            </table>
+        </div>
+
+        <button class="refresh-btn" id="refreshBtn" onclick="loadLeaderboard()">🔄 Refresh Data</button>
+
+        <footer>
+            <p>Powered by Codewars API | Built for tracking team progress</p>
+        </footer>
+    </div>
+
+    <script>
+        // Configuration: Add more usernames here
+        const USERNAMES = [
+            'samjb18'
+            // Add more usernames like: 'username2', 'username3', etc.
+        ];
+
+        const CODEWARS_API = 'https://www.codewars.com/api/v1/users/';
+
+        async function fetchUserData(username) {
+            try {
+                const response = await fetch(CODEWARS_API + username);
+                if (!response.ok) {
+                    throw new Error(`User ${username} not found`);
+                }
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error(`Error fetching data for ${username}:`, error);
+                return null;
+            }
+        }
+
+        function getRankColor(rank) {
+            if (!rank) return '#999';
+            const level = parseInt(rank.name.match(/\d+/)?.[0] || 0);
+            if (rank.name.includes('kyu')) {
+                return '#8b4513'; // Brown for kyu ranks
+            } else {
+                return '#4169e1'; // Blue for dan ranks
+            }
+        }
+
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        function getTopLanguages(languages, limit = 3) {
+            if (!languages) return [];
+            const sorted = Object.entries(languages)
+                .sort((a, b) => b[1].score - a[1].score)
+                .slice(0, limit);
+            return sorted.map(([lang]) => lang);
+        }
+
+        async function loadLeaderboard() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const table = document.getElementById('leaderboardTable');
+            const tbody = document.getElementById('leaderboardBody');
+            const refreshBtn = document.getElementById('refreshBtn');
+
+            // Show loading
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            table.style.display = 'none';
+            refreshBtn.disabled = true;
+
+            try {
+                // Fetch all user data
+                const promises = USERNAMES.map(username => fetchUserData(username));
+                const results = await Promise.all(promises);
+
+                // Filter out failed requests
+                const validUsers = results.filter(user => user !== null);
+
+                if (validUsers.length === 0) {
+                    throw new Error('No valid user data found. Please check usernames.');
+                }
+
+                // Sort by honor points (descending)
+                validUsers.sort((a, b) => (b.honor || 0) - (a.honor || 0));
+
+                // Clear existing rows
+                tbody.innerHTML = '';
+
+                // Populate table
+                validUsers.forEach((user, index) => {
+                    const row = document.createElement('tr');
+                    row.className = `position-${index + 1}`;
+
+                    const topLanguages = getTopLanguages(user.ranks?.languages);
+                    
+                    row.innerHTML = `
+                        <td class="rank-cell center">${index + 1}</td>
+                        <td>
+                            <div class="user-info">
+                                <a href="https://www.codewars.com/users/${user.username}" 
+                                   target="_blank" 
+                                   class="user-link">
+                                    <span class="user-name">${user.username}</span>
+                                </a>
+                            </div>
+                        </td>
+                        <td class="center">
+                            <span class="rank-badge">${user.ranks?.overall?.name || 'Unranked'}</span>
+                        </td>
+                        <td class="center">
+                            <span class="honor-points">${formatNumber(user.honor || 0)}</span>
+                        </td>
+                        <td class="center hide-mobile">
+                            <span class="stat-number">${user.codeChallenges?.totalCompleted || 0}</span>
+                        </td>
+                        <td class="hide-mobile">
+                            <div class="languages">
+                                ${topLanguages.map(lang => 
+                                    `<span class="language-tag">${lang}</span>`
+                                ).join('') || '<span style="color: #999;">N/A</span>'}
+                            </div>
+                        </td>
+                        <td class="hide-mobile">
+                            ${user.clan ? `<span class="clan-badge">${user.clan}</span>` : '<span style="color: #999;">None</span>'}
+                        </td>
+                    `;
+
+                    tbody.appendChild(row);
+                });
+
+                // Update last updated time
+                const now = new Date();
+                document.getElementById('lastUpdated').textContent = 
+                    `Last updated: ${now.toLocaleString()}`;
+
+                // Show table
+                loading.style.display = 'none';
+                table.style.display = 'table';
+
+            } catch (err) {
+                console.error('Error loading leaderboard:', err);
+                error.textContent = `Error: ${err.message}`;
+                error.style.display = 'block';
+                loading.style.display = 'none';
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+
+        // Load on page load
+        window.addEventListener('DOMContentLoaded', loadLeaderboard);
+
+        // Auto-refresh every 5 minutes
+        setInterval(loadLeaderboard, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
