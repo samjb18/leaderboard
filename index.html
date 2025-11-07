@@ -272,7 +272,7 @@
     <div class="container">
         <header>
             <h1>🏆 Codewars Leaderboard</h1>
-            <p class="subtitle">Track your coding progress and compete with teammates</p>
+            <p class="subtitle" id="subtitle">Track your coding progress and compete with teammates</p>
             <p class="last-updated" id="lastUpdated"></p>
         </header>
 
@@ -307,18 +307,34 @@
     </div>
 
     <script>
-        // Configuration: Add more usernames here
-        const USERNAMES = [
-            'samjb18',
-            'Banjobill'
-            // Add more usernames like: 'username2', 'username3', etc.
-        ];
+        // Configuration: Set your clan name/slug here
+        // Find your clan slug from your clan URL: https://www.codewars.com/clans/YOUR-CLAN-SLUG
+        const CLAN_SLUG = 'your-clan-name'; // Change this to your clan slug
+        
+        // Alternative: Set to null and provide manual usernames if you don't want to use clan
+        // const CLAN_SLUG = null;
+        // const MANUAL_USERNAMES = ['samjb18', 'user2', 'user3'];
 
-        const CODEWARS_API = 'https://www.codewars.com/api/v1/users/';
+        const CODEWARS_API = 'https://www.codewars.com/api/v1/';
+
+        async function fetchClanMembers(clanSlug) {
+            try {
+                const response = await fetch(`${CODEWARS_API}clans/${clanSlug}/members`);
+                if (!response.ok) {
+                    throw new Error(`Clan ${clanSlug} not found or API error`);
+                }
+                const data = await response.json();
+                // API returns array of member objects with username property
+                return data.map(member => member.username);
+            } catch (error) {
+                console.error(`Error fetching clan members:`, error);
+                throw error;
+            }
+        }
 
         async function fetchUserData(username) {
             try {
-                const response = await fetch(CODEWARS_API + username);
+                const response = await fetch(`${CODEWARS_API}users/${username}`);
                 if (!response.ok) {
                     throw new Error(`User ${username} not found`);
                 }
@@ -366,16 +382,36 @@
             refreshBtn.disabled = true;
 
             try {
+                let usernames;
+
+                // Get usernames from clan or use manual list
+                if (CLAN_SLUG) {
+                    loading.querySelector('p').textContent = 'Fetching clan members...';
+                    usernames = await fetchClanMembers(CLAN_SLUG);
+                    console.log(`Found ${usernames.length} members in clan: ${CLAN_SLUG}`);
+                } else if (typeof MANUAL_USERNAMES !== 'undefined') {
+                    usernames = MANUAL_USERNAMES;
+                } else {
+                    throw new Error('Please configure either CLAN_SLUG or MANUAL_USERNAMES');
+                }
+
+                if (usernames.length === 0) {
+                    throw new Error('No users found. Check your clan name or add manual usernames.');
+                }
+
                 // Fetch all user data
-                const promises = USERNAMES.map(username => fetchUserData(username));
+                loading.querySelector('p').textContent = `Loading data for ${usernames.length} users...`;
+                const promises = usernames.map(username => fetchUserData(username));
                 const results = await Promise.all(promises);
 
                 // Filter out failed requests
                 const validUsers = results.filter(user => user !== null);
 
                 if (validUsers.length === 0) {
-                    throw new Error('No valid user data found. Please check usernames.');
+                    throw new Error('No valid user data found. Please check usernames or clan name.');
                 }
+
+                console.log(`Successfully loaded ${validUsers.length} out of ${usernames.length} users`);
 
                 // Sort by honor points (descending)
                 validUsers.sort((a, b) => (b.honor || 0) - (a.honor || 0));
@@ -429,6 +465,12 @@
                 const now = new Date();
                 document.getElementById('lastUpdated').textContent = 
                     `Last updated: ${now.toLocaleString()}`;
+
+                // Update subtitle with clan info if using clan
+                if (CLAN_SLUG) {
+                    document.getElementById('subtitle').textContent = 
+                        `Clan: ${CLAN_SLUG} • ${validUsers.length} members`;
+                }
 
                 // Show table
                 loading.style.display = 'none';
