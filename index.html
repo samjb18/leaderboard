@@ -309,7 +309,7 @@
     <script>
         // Configuration: Set your clan name/slug here
         // Find your clan slug from your clan URL: https://www.codewars.com/clans/YOUR-CLAN-SLUG
-        const CLAN_SLUG = 'CSO-Crypto'; // Change this to your clan slug
+        const CLAN_SLUG = 'CSO-Crypto'; // Your clan slug
         
         // Alternative: Set to null and provide manual usernames if you don't want to use clan
         // const CLAN_SLUG = null;
@@ -319,13 +319,27 @@
 
         async function fetchClanMembers(clanSlug) {
             try {
-                const response = await fetch(`${CODEWARS_API}clans/${clanSlug}/members`);
-                if (!response.ok) {
-                    throw new Error(`Clan ${clanSlug} not found or API error`);
+                let allMembers = [];
+                let page = 0;
+                let totalPages = 1;
+
+                // Fetch all pages (API returns 100 members per page)
+                while (page < totalPages) {
+                    const response = await fetch(`${CODEWARS_API}clans/${clanSlug}/members?page=${page}`);
+                    if (!response.ok) {
+                        throw new Error(`Clan ${clanSlug} not found or API error`);
+                    }
+                    const result = await response.json();
+                    
+                    // API returns: { totalPages, totalItems, data: [...] }
+                    totalPages = result.totalPages || 1;
+                    allMembers = allMembers.concat(result.data || []);
+                    
+                    page++;
                 }
-                const data = await response.json();
-                // API returns array of member objects with username property
-                return data.map(member => member.username);
+
+                // Extract usernames from member objects
+                return allMembers.map(member => member.username);
             } catch (error) {
                 console.error(`Error fetching clan members:`, error);
                 throw error;
